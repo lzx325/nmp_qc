@@ -106,3 +106,6 @@ plot/*
 checkpoint/*
 # Pycharm
 .idea
+
+# Vim
+*.swp
