@@ -61,6 +61,11 @@ class MPNN(nn.Module):
 
     def forward(self, g, h_in, e):
 
+        # g: (mb,na_max,na_max) batch of graph matrices
+        # h_in: (mb,na_max,nnf_max) batch of node features
+        # e: (mb, na_max,na_max,nef_max) batch of edge features
+        # target: (mb,nt) batch of targets
+
         h = []
 
         # Padding to some larger dimension d
@@ -71,26 +76,29 @@ class MPNN(nn.Module):
 
         # Layer
         for t in range(0, self.n_layers):
-            e_aux = e.view(-1, e.size(3))
+            e_aux = e.view(-1, e.size(3)) # e_aux: (mb*na_max*na_max,nef_max)
 
-            h_aux = h[t].view(-1, h[t].size(2))
+            h_aux = h[t].view(-1, h[t].size(2)) # h_aux: (mb*na_max,out_dim), h[t]: (mb,na_max,out_dim)
 
-            m = self.m[0].forward(h[t], h_aux, e_aux)
-            m = m.view(h[0].size(0), h[0].size(1), -1, m.size(1))
+            m = self.m[0].forward(h[t], h_aux, e_aux) # m: (mb*na_max*na_max,out_dim)
+            m = m.view(h[0].size(0), h[0].size(1), -1, m.size(1)) # m: (mb,na_max,na_max,out_dim)
+
 
             # Nodes without edge set message to 0
-            m = torch.unsqueeze(g, 3).expand_as(m) * m
+            m = torch.unsqueeze(g, 3).expand_as(m) * m  # m: (mb,na_max,na_max,out_dim)
 
-            m = torch.squeeze(torch.sum(m, 1))
+            # aggregate messages
+            m = torch.squeeze(torch.sum(m, 1)) # m: (mb,na_max,out_dim)
 
-            h_t = self.u[0].forward(h[t], m)
+            h_t = self.u[0].forward(h[t], m) # h_t: (mb,na_max,out_dim)
 
-            # Delete virtual nodes
-            h_t = (torch.sum(h_in, 2).expand_as(h_t) > 0).type_as(h_t) * h_t
+            # Delete virtual nodes. lizx add keepdim
+            h_t = (torch.sum(h_in, 2, keepdim=True).expand_as(h_t) > 0).type_as(h_t) * h_t
             h.append(h_t)
 
         # Readout
-        res = self.r.forward(h)
+
+        res = self.r.forward(h) # res: (mb,n_classes)
 
         if self.type == 'classification':
             res = nn.LogSoftmax()(res)

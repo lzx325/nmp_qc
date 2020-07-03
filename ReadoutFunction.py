@@ -159,15 +159,17 @@ class ReadoutFunction(nn.Module):
 
     def r_mpnn(self, h):
 
-        aux = Variable( torch.Tensor(h[0].size(0), self.args['out']).type_as(h[0].data).zero_() )
+        aux = Variable( torch.Tensor(h[0].size(0), self.args['out']).type_as(h[0].data).zero_() ) # aux: (na_max,n_classes)
         # For each graph
-        for i in range(h[0].size(0)):
-            nn_res = nn.Sigmoid()(self.learn_modules[0](torch.cat([h[0][i,:,:], h[-1][i,:,:]], 1)))*self.learn_modules[1](h[-1][i,:,:])
+        for i in range(h[0].size(0)): # loop over atoms
+            # nn_res: (na_max,n_classes)
+            nn_res = nn.Sigmoid()(self.learn_modules[0](torch.cat([h[0][i,:,:], h[-1][i,:,:]], 1)))*self.learn_modules[1](h[-1][i,:,:]) 
 
             # Delete virtual nodes
-            nn_res = (torch.sum(h[0][i,:,:],1).expand_as(nn_res)>0).type_as(nn_res)* nn_res
+            nn_res = (torch.sum(h[0][i,:,:],1,keepdim=True).expand_as(nn_res)>0).type_as(nn_res)* nn_res
 
-            aux[i,:] = torch.sum(nn_res,0)
+            aux[i,:] = torch.sum(nn_res,0,keepdim=True)
+
 
         return aux
 

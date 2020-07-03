@@ -51,7 +51,10 @@ class Qm9(data.Dataset):
 
         if self.target_transform is not None:
             target = self.target_transform(target)
-
+        # g is the graph matrix (na,na), na: number of atoms
+        # h is the list of node features, len(h): na
+        # e is the dict of edge features, len(e): ne, ne: number of edges
+        # target is the list of targets, len(target): nt, nt: number of targets
         return (g, h, e), target
 
     def __len__(self):

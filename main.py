@@ -96,7 +96,6 @@ def main():
     data_train = datasets.Qm9(root, train_ids, edge_transform=utils.qm9_edges, e_representation='raw_distance')
     data_valid = datasets.Qm9(root, valid_ids, edge_transform=utils.qm9_edges, e_representation='raw_distance')
     data_test = datasets.Qm9(root, test_ids, edge_transform=utils.qm9_edges, e_representation='raw_distance')
-
     # Define model and optimizer
     print('Define model')
     # Select one graph
@@ -117,13 +116,13 @@ def main():
     train_loader = torch.utils.data.DataLoader(data_train,
                                                batch_size=args.batch_size, shuffle=True,
                                                collate_fn=datasets.utils.collate_g,
-                                               num_workers=args.prefetch, pin_memory=True)
+                                               num_workers=0, pin_memory=True) # TODO: change num_workers
     valid_loader = torch.utils.data.DataLoader(data_valid,
                                                batch_size=args.batch_size, collate_fn=datasets.utils.collate_g,
-                                               num_workers=args.prefetch, pin_memory=True)
+                                               num_workers=0, pin_memory=True)
     test_loader = torch.utils.data.DataLoader(data_test,
                                               batch_size=args.batch_size, collate_fn=datasets.utils.collate_g,
-                                              num_workers=args.prefetch, pin_memory=True)
+                                              num_workers=0, pin_memory=True)
 
     print('\tCreate model')
     in_n = [len(h_t[0]), len(list(e.values())[0])]
@@ -228,6 +227,10 @@ def train(train_loader, model, criterion, optimizer, epoch, evaluation, logger):
     for i, (g, h, e, target) in enumerate(train_loader):
 
         # Prepare input data
+        # g: (mb,na_max,na_max)
+        # h: (mb,na_max,nnf_max)
+        # e: (mb, na_max,na_max,nef_max)
+        # target: (mb,nt)
         if args.cuda:
             g, h, e, target = g.cuda(), h.cuda(), e.cuda(), target.cuda()
         g, h, e, target = Variable(g), Variable(h), Variable(e), Variable(target)

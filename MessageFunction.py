@@ -167,17 +167,25 @@ class MessageFunction(nn.Module):
 
     # Gilmer et al. (2017), Neural Message Passing for Quantum Chemistry
     def m_mpnn(self, h_v, h_w, e_vw, opt={}):
+
+        # h_v: (mb,na_max,out_dim)
+        # h_w: (mb*na_max,out_dim)
+        # e_vw: (mb*na_max*na_max,nef_max)
         # Matrices for each edge
-        edge_output = self.learn_modules[0](e_vw)
-        edge_output = edge_output.view(-1, self.args['out'], self.args['in'])
 
-        h_w_rows = h_w[..., None].expand(h_w.size(0), h_v.size(1), h_w.size(1)).contiguous()
+        edge_output = self.learn_modules[0](e_vw) # edge_output: (mb*na_max*na_max,out_dim*out_dim)
 
-        h_w_rows = h_w_rows.view(-1, self.args['in'])
+        edge_output = edge_output.view(-1, self.args['out'], self.args['in']) # edge_output: (mb*na_max*na_max,out_dim,out_dim)
+        h_w_rows = h_w[..., None].expand(h_w.size(0), h_w.size(1), h_v.size(1)) # lizx: changed 
+        # h_w_rows: (mb*na_max,out_dim,na_max)
+        h_w_rows=h_w_rows.transpose(1,2).contiguous() # h_w_rows: (mb*na_max,na_max,out_dim)
+
+        h_w_rows = h_w_rows.view(-1, self.args['in']) # h_w_rows: (mb*na_max*na_max,out_dim)
 
         h_multiply = torch.bmm(edge_output, torch.unsqueeze(h_w_rows,2))
+        # (mb*na_max*na_max,out_dim,out_dim) * (mb*na_max*na_max,out_dim,1) -> h_multiply: (mb*na_max*na_max,out_dim,1)
 
-        m_new = torch.squeeze(h_multiply)
+        m_new = torch.squeeze(h_multiply) # m_new: (mb*na_max*na_max,out_dim)
 
         return m_new
 

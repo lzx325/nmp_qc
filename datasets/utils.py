@@ -151,17 +151,18 @@ def accuracy(output, target, topk=(1,)):
 
 def collate_g(batch):
 
+    # this computes the maximum size of #atoms, #node_features, #edge_features
     batch_sizes = np.max(np.array([[len(input_b[1]), len(input_b[1][0]), len(input_b[2]),
                                 len(list(input_b[2].values())[0])]
                                 if input_b[2] else
                                 [len(input_b[1]), len(input_b[1][0]), 0,0]
                                 for (input_b, target_b) in batch]), axis=0)
 
-    g = np.zeros((len(batch), batch_sizes[0], batch_sizes[0]))
-    h = np.zeros((len(batch), batch_sizes[0], batch_sizes[1]))
-    e = np.zeros((len(batch), batch_sizes[0], batch_sizes[0], batch_sizes[3]))
+    g = np.zeros((len(batch), batch_sizes[0], batch_sizes[0])) # batch of graph matrices (mb,na_max,na_max), mb: minibatch_size
+    h = np.zeros((len(batch), batch_sizes[0], batch_sizes[1])) # batch of node features (mb,na_max,nnf_max), nnf: number of node features
+    e = np.zeros((len(batch), batch_sizes[0], batch_sizes[0], batch_sizes[3])) # batch of edge features, (mb, na_max,na_max,nef_max), nef: number of edge features
 
-    target = np.zeros((len(batch), len(batch[0][1])))
+    target = np.zeros((len(batch), len(batch[0][1]))) # batch of targets (mb,nt)
 
     for i in range(len(batch)):
 
@@ -185,7 +186,6 @@ def collate_g(batch):
     h = torch.FloatTensor(h)
     e = torch.FloatTensor(e)
     target = torch.FloatTensor(target)
-
     return g, h, e, target
 
 

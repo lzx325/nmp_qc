@@ -418,29 +418,29 @@ def init_graph(prop):
 def xyz_graph_reader(graph_file):
 
     with open(graph_file,'r') as f:
-        # Number of atoms
+        # line 1: Number of atoms
         na = int(f.readline())
 
-        # Graph properties
+        # line 2: Graph properties
         properties = f.readline()
         g, l = init_graph(properties)
         
         atom_properties = []
-        # Atoms properties
+        # line 3..na+2 Atoms properties
         for i in range(na):
             a_properties = f.readline()
-            a_properties = a_properties.replace('.*^', 'e')
+            a_properties = a_properties.replace('.*^', 'e') # correct format for exponential notation
             a_properties = a_properties.replace('*^', 'e')
             a_properties = a_properties.split()
             atom_properties.append(a_properties)
 
-        # Frequencies
+        # line na+3: Frequencies (discarded)
         f.readline()
 
-        # SMILES
+        # line na+4: SMILES
         smiles = f.readline()
         smiles = smiles.split()
-        smiles = smiles[0]
+        smiles = smiles[0] # select only the first smiles code
         
         m = Chem.MolFromSmiles(smiles)
         m = Chem.AddHs(m)
